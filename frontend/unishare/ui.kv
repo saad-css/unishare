@@ -1,0 +1,565 @@
+#:import SlideTransition kivy.uix.screenmanager.SlideTransition
+#:import FadeTransition kivy.uix.screenmanager.FadeTransition
+
+MDScreenManager:
+    id: screen_manager
+    transition: FadeTransition(duration=0.22)
+    LoginScreen:
+    RegisterScreen:
+    HomeScreen:
+    FilesScreen:
+    AdminScreen:
+
+<LoginScreen>:
+    name: "login"
+    md_bg_color: 0.965, 0.973, 0.988, 1
+
+    MDBoxLayout:
+        orientation: 'vertical'
+        padding: '22dp'
+        spacing: '12dp'
+
+        Widget:
+            size_hint_y: 0.08
+
+        MDCard:
+            orientation: 'vertical'
+            padding: '26dp'
+            spacing: '16dp'
+            size_hint: 1, None
+            height: '420dp'
+            radius: [28, 28, 28, 28]
+            elevation: 3
+            md_bg_color: 1, 1, 1, 1
+
+            MDIcon:
+                icon: 'cloud-lock-outline'
+                font_size: '74sp'
+                pos_hint: {'center_x': .5}
+                theme_text_color: 'Custom'
+                text_color: 0.255, 0.647, 0.961, 1
+
+            MDLabel:
+                text: 'UniShare'
+                halign: 'center'
+                font_style: 'H4'
+                bold: True
+                theme_text_color: 'Custom'
+                text_color: 0.12, 0.16, 0.23, 1
+                adaptive_height: True
+
+            MDLabel:
+                id: app_sub_lbl
+                text: 'Student Collaboration Platform'
+                halign: 'center'
+                font_style: 'Body1'
+                theme_text_color: 'Custom'
+                text_color: 0.48, 0.52, 0.6, 1
+                adaptive_height: True
+
+            MDTextField:
+                id: email_input
+                hint_text: 'Email'
+                mode: 'fill'
+                fill_color_normal: 0.96, 0.97, 0.99, 1
+                radius: [18, 18, 18, 18]
+                line_color_focus: 0.255, 0.647, 0.961, 1
+                icon_left: 'email-outline'
+
+            MDTextField:
+                id: pass_input
+                hint_text: 'Password'
+                mode: 'fill'
+                password: True
+                fill_color_normal: 0.96, 0.97, 0.99, 1
+                radius: [18, 18, 18, 18]
+                line_color_focus: 0.255, 0.647, 0.961, 1
+                icon_left: 'lock-outline'
+
+            MDFillRoundFlatButton:
+                id: login_btn
+                text: 'LOGIN'
+                size_hint_x: 1
+                md_bg_color: 0.255, 0.647, 0.961, 1
+                text_color: 1, 1, 1, 1
+                on_release: root.do_login()
+
+            MDLabel:
+                id: error_label
+                text: ''
+                halign: 'center'
+                theme_text_color: 'Custom'
+                text_color: 0.88, 0.2, 0.2, 1
+                adaptive_height: True
+
+            MDBoxLayout:
+                size_hint_y: None
+                height: '42dp'
+                spacing: '8dp'
+
+                MDFlatButton:
+                    id: no_account_btn
+                    text: 'No account? Create one'
+                    theme_text_color: 'Custom'
+                    text_color: 0.255, 0.647, 0.961, 1
+                    on_release:
+                        root.manager.transition = SlideTransition(direction='left', duration=0.25)
+                        root.manager.current = 'register'
+
+        Widget:
+
+<RegisterScreen>:
+    name: 'register'
+    md_bg_color: 0.965, 0.973, 0.988, 1
+
+    MDBoxLayout:
+        orientation: 'vertical'
+        padding: '20dp'
+        spacing: '12dp'
+
+        MDBoxLayout:
+            size_hint_y: None
+            height: '56dp'
+
+            MDIconButton:
+                icon: 'arrow-right'
+                on_release:
+                    root.manager.transition = SlideTransition(direction='right', duration=0.25)
+                    root.manager.current = 'login'
+
+            MDLabel:
+                id: register_title_lbl
+                text: 'Create Account'
+                halign: 'center'
+                font_style: 'H6'
+                bold: True
+
+        MDCard:
+            orientation: 'vertical'
+            padding: '24dp'
+            spacing: '16dp'
+            radius: [28, 28, 28, 28]
+            elevation: 3
+            md_bg_color: 1, 1, 1, 1
+
+            MDTextField:
+                id: name_input
+                hint_text: 'Full Name'
+                mode: 'fill'
+                fill_color_normal: 0.96, 0.97, 0.99, 1
+                radius: [18, 18, 18, 18]
+                line_color_focus: 0.255, 0.647, 0.961, 1
+                icon_left: 'account-outline'
+
+            MDTextField:
+                id: email_input
+                hint_text: 'Email'
+                mode: 'fill'
+                fill_color_normal: 0.96, 0.97, 0.99, 1
+                radius: [18, 18, 18, 18]
+                line_color_focus: 0.255, 0.647, 0.961, 1
+                icon_left: 'email-outline'
+
+            MDTextField:
+                id: pass_input
+                hint_text: 'Password'
+                mode: 'fill'
+                password: True
+                fill_color_normal: 0.96, 0.97, 0.99, 1
+                radius: [18, 18, 18, 18]
+                line_color_focus: 0.255, 0.647, 0.961, 1
+                icon_left: 'lock-outline'
+
+            MDFillRoundFlatButton:
+                id: create_btn
+                text: 'REGISTER'
+                size_hint_x: 1
+                md_bg_color: 0.255, 0.647, 0.961, 1
+                text_color: 1, 1, 1, 1
+                on_release: root.do_register()
+
+            MDLabel:
+                id: error_label
+                text: ''
+                halign: 'center'
+                theme_text_color: 'Custom'
+                text_color: 0.88, 0.2, 0.2, 1
+                adaptive_height: True
+
+            MDFlatButton:
+                id: have_acc_btn
+                text: 'Already have an account? Login'
+                theme_text_color: 'Custom'
+                text_color: 0.255, 0.647, 0.961, 1
+                pos_hint: {'center_x': .5}
+                on_release:
+                    root.manager.transition = SlideTransition(direction='right', duration=0.25)
+                    root.manager.current = 'login'
+
+<HomeScreen>:
+    name: 'home'
+    md_bg_color: 0.965, 0.973, 0.988, 1
+
+    MDBoxLayout:
+        orientation: 'horizontal'
+
+        MDBoxLayout:
+            orientation: 'vertical'
+
+            MDBoxLayout:
+                size_hint_y: None
+                height: '60dp'
+                padding: '12dp', '8dp'
+                spacing: '8dp'
+                md_bg_color: 1, 1, 1, 0.98
+
+                MDIconButton:
+                    icon: 'menu'
+                    on_release: root.toggle_drawer()
+
+                MDLabel:
+                    id: home_title_lbl
+                    text: 'Home - UniShare'
+                    halign: 'center'
+                    font_style: 'H6'
+                    bold: True
+                    theme_text_color: 'Custom'
+                    text_color: 0.1, 0.1, 0.1, 1
+
+            FloatLayout:
+                MDScrollView:
+                    MDBoxLayout:
+                        orientation: 'vertical'
+                        padding: '18dp'
+                        spacing: '16dp'
+                        adaptive_height: True
+
+                        MDCard:
+                            size_hint: 1, None
+                            height: '140dp'
+                            radius: [28, 28, 28, 28]
+                            padding: '18dp'
+                            elevation: 3
+                            md_bg_color: 0.255, 0.647, 0.961, 1
+                            orientation: 'vertical'
+                            spacing: '10dp'
+
+                            MDLabel:
+                                id: welcome_label
+                                text: 'Hello ...'
+                                bold: True
+                                font_style: 'H6'
+                                theme_text_color: 'Custom'
+                                text_color: 1, 1, 1, 1
+                                adaptive_height: True
+
+                            MDLabel:
+                                id: files_label
+                                text: 'Files Uploaded: 0'
+                                theme_text_color: 'Custom'
+                                text_color: 1, 1, 1, 0.92
+                                adaptive_height: True
+
+                        MDCard:
+                            size_hint: 1, None
+                            height: '64dp'
+                            radius: [22, 22, 22, 22]
+                            padding: '18dp'
+                            elevation: 2
+                            md_bg_color: 1, 1, 1, 1
+
+                            MDLabel:
+                                id: selected_course_label
+                                text: 'Select a course from the side panel'
+                                halign: 'center'
+                                bold: True
+                                theme_text_color: 'Custom'
+                                text_color: 0.255, 0.647, 0.961, 1
+
+                        MDGridLayout:
+                            id: file_grid
+                            cols: 2
+                            spacing: '12dp'
+                            adaptive_height: True
+
+                        MDBoxLayout:
+                            id: empty_box
+                            orientation: 'vertical'
+                            size_hint_y: None
+                            height: '240dp'
+                            spacing: '10dp'
+
+                            MDIcon:
+                                icon: 'cloud-upload-outline'
+                                font_size: '88sp'
+                                pos_hint: {'center_x': .5}
+                                theme_text_color: 'Custom'
+                                text_color: 0.78, 0.78, 0.78, 1
+
+                            MDLabel:
+                                id: empty_title_lbl
+                                text: 'No files yet'
+                                halign: 'center'
+                                bold: True
+                                font_style: 'H6'
+                                theme_text_color: 'Custom'
+                                text_color: 0.35, 0.35, 0.35, 1
+
+                            MDLabel:
+                                id: empty_sub_lbl
+                                text: 'Start sharing your study materials with classmates'
+                                halign: 'center'
+                                theme_text_color: 'Custom'
+                                text_color: 0.55, 0.55, 0.55, 1
+
+                MDFloatingActionButton:
+                    icon: 'plus'
+                    md_bg_color: 0.255, 0.647, 0.961, 1
+                    pos_hint: {'right': 0.97, 'y': 0.03}
+                    on_release: root.upload_file()
+
+        MDBoxLayout:
+            id: drawer_panel
+            size_hint_x: None
+            width: '0dp'
+            opacity: 0
+            orientation: 'vertical'
+            md_bg_color: 1, 1, 1, 1
+
+            MDBoxLayout:
+                size_hint_y: None
+                height: '160dp'
+                orientation: 'vertical'
+                padding: '16dp'
+                spacing: '6dp'
+                md_bg_color: 0.11, 0.17, 0.3, 1
+
+                Widget:
+                    size_hint_y: 0.1
+
+                MDCard:
+                    size_hint: None, None
+                    size: '60dp', '60dp'
+                    radius: [30,]
+                    elevation: 0
+                    md_bg_color: 1, 1, 1, 1
+                    pos_hint: {'center_x': .5}
+
+                    MDIcon:
+                        icon: 'account'
+                        font_size: '34sp'
+                        pos_hint: {'center_x': .5, 'center_y': .5}
+                        theme_text_color: 'Custom'
+                        text_color: 0.11, 0.17, 0.3, 1
+
+                MDLabel:
+                    id: drawer_name
+                    text: '...'
+                    halign: 'center'
+                    bold: True
+                    font_style: 'H6'
+                    theme_text_color: 'Custom'
+                    text_color: 1, 1, 1, 1
+
+                MDLabel:
+                    id: drawer_email
+                    text: ''
+                    halign: 'center'
+                    theme_text_color: 'Custom'
+                    text_color: 1, 1, 1, 0.82
+
+            MDBoxLayout:
+                size_hint_y: None
+                height: '40dp'
+                md_bg_color: 0.255, 0.647, 0.961, 1
+                padding: '16dp', '4dp'
+
+                MDLabel:
+                    id: colleges_hdr_lbl
+                    text: 'Majors'
+                    bold: True
+                    theme_text_color: 'Custom'
+                    text_color: 1, 1, 1, 1
+
+            MDScrollView:
+                MDBoxLayout:
+                    id: drawer_list
+                    orientation: 'vertical'
+                    adaptive_height: True
+                    padding: '0dp', '4dp'
+
+            MDSeparator:
+
+            MDBoxLayout:
+                size_hint_y: None
+                height: '52dp'
+                padding: '16dp', '0dp'
+                spacing: '12dp'
+                on_touch_down:
+                    if self.collide_point(*args[1].pos): root.logout()
+
+                MDIcon:
+                    icon: 'logout'
+                    font_size: '22sp'
+                    size_hint_x: None
+                    width: '28dp'
+                    theme_text_color: 'Custom'
+                    text_color: 0.9, 0.2, 0.2, 1
+
+                MDLabel:
+                    id: logout_lbl
+                    text: 'Logout'
+                    bold: True
+                    theme_text_color: 'Custom'
+                    text_color: 0.9, 0.2, 0.2, 1
+
+<FilesScreen>:
+    name: 'files'
+    md_bg_color: 0.965, 0.973, 0.988, 1
+
+    MDBoxLayout:
+        orientation: 'vertical'
+
+        MDBoxLayout:
+            size_hint_y: None
+            height: '56dp'
+            md_bg_color: 0.255, 0.647, 0.961, 1
+            padding: '8dp'
+            spacing: '4dp'
+
+            MDIconButton:
+                icon: 'arrow-right'
+                theme_text_color: 'Custom'
+                text_color: 1, 1, 1, 1
+                on_release:
+                    root.manager.transition = SlideTransition(direction='right', duration=0.25)
+                    root.manager.current = 'home'
+
+            MDLabel:
+                id: files_title_lbl
+                text: 'Course Files'
+                halign: 'center'
+                font_style: 'H6'
+                bold: True
+                theme_text_color: 'Custom'
+                text_color: 1, 1, 1, 1
+
+        MDScrollView:
+            MDGridLayout:
+                id: full_file_grid
+                cols: 2
+                padding: '16dp'
+                spacing: '12dp'
+                adaptive_height: True
+
+<FileCard>:
+    orientation: 'vertical'
+    size_hint_y: None
+    height: '250dp'
+    radius: [20,]
+    padding: '14dp'
+    spacing: '8dp'
+    elevation: 2
+    md_bg_color: 1, 1, 1, 1
+
+    canvas.before:
+        Color:
+            rgba: 0.87, 0.92, 1, 1
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [20, 20, 20, 20]
+
+    MDIcon:
+        id: file_icon
+        icon: 'file-document-outline'
+        font_size: '40sp'
+        pos_hint: {'center_x': .5}
+        theme_text_color: 'Custom'
+        text_color: 0.255, 0.647, 0.961, 1
+
+    MDLabel:
+        id: title
+        halign: 'center'
+        bold: True
+        theme_text_color: 'Custom'
+        text_color: 0.1, 0.1, 0.1, 1
+        adaptive_height: True
+
+    MDLabel:
+        id: uploader
+        halign: 'center'
+        theme_text_color: 'Custom'
+        text_color: 0.45, 0.45, 0.45, 1
+        adaptive_height: True
+
+    MDFillRoundFlatButton:
+        id: dl_btn
+        text: 'DOWNLOAD'
+        md_bg_color: 0.255, 0.647, 0.961, 1
+        text_color: 1, 1, 1, 1
+        size_hint_x: 1
+        on_release: root.download_file()
+
+    # Action buttons row
+    MDBoxLayout:
+        size_hint_y: None
+        height: '42dp'
+        spacing: '8dp'
+
+        MDFlatButton:
+            text: 'REPORT'
+            theme_text_color: 'Custom'
+            text_color: 1, 0.2, 0.2, 1
+            on_release: root.report_file()
+            
+<AdminScreen>:
+    name: 'admin'
+    md_bg_color: 0.965, 0.973, 0.988, 1
+
+    MDBoxLayout:
+        orientation: 'vertical'
+        padding: '18dp'
+        spacing: '12dp'
+
+        MDLabel:
+            text: 'Admin Panel'
+            halign: 'center'
+            font_style: 'H5'
+            bold: True
+            adaptive_height: True
+
+        MDBoxLayout:
+            size_hint_y: None
+            height: '46dp'
+            spacing: '8dp'
+
+            MDFillRoundFlatButton:
+                text: 'Reports'
+                size_hint_x: 1
+                on_release: root.load_reports()
+
+            MDFillRoundFlatButton:
+                text: 'Pending Files'
+                size_hint_x: 1
+                on_release: root.load_pending_files()
+
+        MDLabel:
+            id: admin_status
+            text: 'Reports will appear here.'
+            halign: 'center'
+            theme_text_color: 'Custom'
+            text_color: 0.25, 0.25, 0.25, 1
+            adaptive_height: True
+
+        MDScrollView:
+            MDBoxLayout:
+                id: admin_list
+                orientation: 'vertical'
+                spacing: '10dp'
+                adaptive_height: True
+
+        MDFlatButton:
+            text: 'Logout'
+            pos_hint: {'center_x': .5}
+            on_release: root.logout()

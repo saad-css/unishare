@@ -1,0 +1,20 @@
+UniShare fixes applied
+
+1. Removed Arabic language switching and made the frontend English-only.
+2. Removed the rating button and removed the rating endpoint from the backend routes.
+3. Fixed frontend syntax errors in home_screen.py and register_screen.py.
+4. Fixed AdminScreen registration in main.py.
+5. Added FileReport model to backend/app/models.py.
+6. Added report workflow:
+   - Student presses REPORT on a file card.
+   - Backend creates an open report.
+   - Admin Panel loads reports immediately.
+   - Admin can Accept Report or Reject Report.
+7. Added Admin pending file workflow:
+   - Pending files appear in Admin Panel.
+   - Admin can Approve File or Reject File.
+8. Rebuilt AdminScreen to show cards with action buttons instead of raw JSON text.
+9. Removed Git/cache/unnecessary folders from the final ZIP.
+
+Admin login email currently configured in backend/app/routes.py:
+s3@gmail.com
