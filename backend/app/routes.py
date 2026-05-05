@@ -158,43 +158,66 @@ def upload():
 
     course = Course.query.get(course_id)
     user = User.query.get(user_id)
-    if not course or not user:
-        return jsonify({'error': 'Invalid course or user'}), 400
+
+    if not course:
+        return jsonify({'error': 'Course not found'}), 404
+
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
 
     # Clean and validate filename.
     original_name = secure_original_filename(uploaded_file.filename or '')
+
     if not original_name:
         return jsonify({'error': 'Invalid filename'}), 400
 
     if not allowed_file(original_name):
         return jsonify({'error': 'File type not allowed'}), 400
 
-    # Save the physical file with a unique server-side name.
-    storage_name = build_storage_name(original_name)
-    upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], storage_name)
-    uploaded_file.save(upload_path)
+    try:
+        # Make sure the upload folder exists.
+        os.makedirs(current_app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-    # Review file content automatically. Files that cannot be read go to admin.
-    status, review_reason = review_file_content(upload_path, course.name)
+        # Save the physical file with a unique server-side name.
+        storage_name = build_storage_name(original_name)
+        upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], storage_name)
+        uploaded_file.save(upload_path)
 
-    record = SharedFile(
-        course_id=course_id,
-        user_id=user_id,
-        filename=original_name,
-        storage_name=storage_name,
-        status=status,
-        review_reason=review_reason,
-    )
+        # Review file content automatically.
+        status, review_reason = review_file_content(upload_path, course.name)
 
-    db.session.add(record)
-    db.session.commit()
+        # Prevent invalid status values from breaking the app.
+        if status not in ['approved', 'rejected', 'pending_review']:
+            status = 'pending_review'
+            review_reason = 'File needs manual admin review'
 
-    return jsonify({
-        'message': 'File uploaded successfully',
-        'file': serialize_file(record),
-        'status': status,
-        'review_reason': review_reason,
-    }), 201
+        record = SharedFile(
+            course_id=course.id,
+            user_id=user.id,
+            filename=original_name,
+            storage_name=storage_name,
+            status=status,
+            review_reason=review_reason,
+        )
+
+        db.session.add(record)
+        db.session.commit()
+
+        return jsonify({
+            'message': 'File uploaded successfully',
+            'file': serialize_file(record),
+            'status': status,
+            'review_reason': review_reason,
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.exception("Upload failed")
+
+        return jsonify({
+            'error': 'Upload failed',
+            'details': str(e)
+        }), 500
 
 
 @api.get('/download/<path:storage_name>')
