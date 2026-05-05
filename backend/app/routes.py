@@ -306,3 +306,9 @@ def admin_reject_report(report_id: int):
     report.admin_note = 'Rejected by admin'
     db.session.commit()
     return jsonify({'message': 'Report rejected successfully', 'report': serialize_report(report)})
+
+@api.get('/fix-db')
+def fix_db():
+    db.session.execute(db.text("ALTER TABLE shared_files DROP COLUMN IF EXISTS rating;"))
+    db.session.commit()
+    return jsonify({'message': 'Database fixed successfully'})
