@@ -15,21 +15,23 @@ ADMIN_EMAIL = 's3@gmail.com'
 
 
 def serialize_file(row: SharedFile) -> dict:
-    # Convert a SharedFile database row into a JSON-ready dictionary.
+    # Convert a SharedFile row into a JSON response.
     return {
         'id': row.id,
         'filename': row.filename,
         'storage_name': row.storage_name,
+        'course_id': row.course_id,
         'course': row.course.name if row.course else '',
+        'user_id': row.user_id,
         'uploader': row.uploader.full_name if row.uploader else '',
         'status': row.status,
         'review_reason': row.review_reason,
-        'created_at': row.created_at.isoformat(),
+        'created_at': row.created_at.isoformat() if row.created_at else '',
     }
 
 
 def serialize_report(row: FileReport) -> dict:
-    # Convert a FileReport database row into a JSON-ready dictionary.
+    # Convert a FileReport row into a JSON response.
     return {
         'id': row.id,
         'file_id': row.file_id,
@@ -41,8 +43,24 @@ def serialize_report(row: FileReport) -> dict:
         'reason': row.reason,
         'status': row.status,
         'admin_note': row.admin_note,
-        'created_at': row.created_at.isoformat(),
+        'created_at': row.created_at.isoformat() if row.created_at else '',
     }
+
+
+def require_admin_from_payload_or_query():
+    # Simple admin check used by admin endpoints.
+    # The frontend sends admin user_id; the backend verifies that this user is an admin.
+    payload = request.get_json(silent=True) or {}
+    user_id = payload.get('admin_user_id') or request.args.get('admin_user_id', type=int)
+
+    if not user_id:
+        return None, (jsonify({'error': 'Admin user id is required'}), 401)
+
+    user = User.query.get(user_id)
+    if not user or not user.is_admin:
+        return None, (jsonify({'error': 'Admin access only'}), 403)
+
+    return user, None
 
 
 @api.route('/')
@@ -65,15 +83,12 @@ def signup():
     email = (payload.get('email') or '').strip().lower()
     password = (payload.get('password') or '').strip()
 
-    # Validate required fields.
     if not all([full_name, email, password]):
         return jsonify({'error': 'Please fill in all fields'}), 400
 
-    # Validate email format.
     if not re.match(EMAIL_REGEX, email):
         return jsonify({'error': 'Invalid email format'}), 400
 
-    # Grant admin access if the registered email matches the admin email.
     user = User(full_name=full_name, email=email, is_admin=(email == ADMIN_EMAIL))
     user.set_password(password)
 
@@ -98,7 +113,7 @@ def login():
     if not user or not user.check_password(password):
         return jsonify({'error': 'Invalid email or password'}), 401
 
-    # Force the configured admin email to be admin even for old accounts.
+    # Force configured admin email to become admin even if it existed before the admin column.
     if email == ADMIN_EMAIL and not user.is_admin:
         user.is_admin = True
         db.session.commit()
@@ -140,19 +155,18 @@ def courses(major_id: int):
 
 @api.get('/files/<int:course_id>')
 def files(course_id: int):
-    # Return only approved files for students.
+    # Return only approved files for normal students.
     rows = SharedFile.query.filter_by(course_id=course_id, status='approved').order_by(SharedFile.created_at.desc()).all()
     return jsonify([serialize_file(row) for row in rows])
 
 
 @api.post('/upload')
 def upload():
-    # Upload a file and store its metadata in the database.
+    # Upload a file, run the automatic review algorithm, and save metadata.
     course_id = request.form.get('course_id', type=int)
     user_id = request.form.get('user_id', type=int)
     uploaded_file = request.files.get('file')
 
-    # Validate request data.
     if not course_id or not user_id or not uploaded_file:
         return jsonify({'error': 'Missing upload data'}), 400
 
@@ -165,9 +179,7 @@ def upload():
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
-    # Clean and validate filename.
     original_name = secure_original_filename(uploaded_file.filename or '')
-
     if not original_name:
         return jsonify({'error': 'Invalid filename'}), 400
 
@@ -175,18 +187,16 @@ def upload():
         return jsonify({'error': 'File type not allowed'}), 400
 
     try:
-        # Make sure the upload folder exists.
+        # Render/local environments may not have the uploads folder yet.
         os.makedirs(current_app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-        # Save the physical file with a unique server-side name.
+        # Store the physical file under a unique server-side name.
         storage_name = build_storage_name(original_name)
         upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], storage_name)
         uploaded_file.save(upload_path)
 
-        # Review file content automatically.
+        # Automatic algorithm decides: approved, rejected, or pending_review.
         status, review_reason = review_file_content(upload_path, course.name)
-
-        # Prevent invalid status values from breaking the app.
         if status not in ['approved', 'rejected', 'pending_review']:
             status = 'pending_review'
             review_reason = 'File needs manual admin review'
@@ -210,14 +220,10 @@ def upload():
             'review_reason': review_reason,
         }), 201
 
-    except Exception as e:
+    except Exception as exc:
         db.session.rollback()
-        current_app.logger.exception("Upload failed")
-
-        return jsonify({
-            'error': 'Upload failed',
-            'details': str(e)
-        }), 500
+        current_app.logger.exception('Upload failed')
+        return jsonify({'error': 'Upload failed', 'details': str(exc)}), 500
 
 
 @api.get('/download/<path:storage_name>')
@@ -234,7 +240,7 @@ def download(storage_name: str):
 
 @api.post('/files/<int:file_id>/report')
 def report_file(file_id: int):
-    # Allow users to report a file. The report appears immediately in Admin Panel.
+    # Allow students to report an approved file; admin can accept or reject the report.
     payload = request.get_json(silent=True) or {}
     user_id = payload.get('user_id')
     reason = (payload.get('reason') or 'Reported by user').strip()
@@ -249,16 +255,35 @@ def report_file(file_id: int):
     return jsonify({'message': 'Report submitted successfully', 'report': serialize_report(report)}), 201
 
 
+@api.get('/admin/files')
+def admin_all_files():
+    # Admin can view all files: approved, rejected, and pending_review.
+    admin, error = require_admin_from_payload_or_query()
+    if error:
+        return error
+
+    rows = SharedFile.query.order_by(SharedFile.created_at.desc()).all()
+    return jsonify([serialize_file(row) for row in rows])
+
+
 @api.get('/admin/pending-files')
 def admin_pending_files():
-    # Return files that need manual admin review.
+    # Admin can view files that need manual review.
+    admin, error = require_admin_from_payload_or_query()
+    if error:
+        return error
+
     rows = SharedFile.query.filter_by(status='pending_review').order_by(SharedFile.created_at.desc()).all()
     return jsonify([serialize_file(row) for row in rows])
 
 
 @api.post('/admin/files/<int:file_id>/approve')
 def admin_approve_file(file_id: int):
-    # Approve a pending file manually.
+    # Admin approves a pending/rejected file.
+    admin, error = require_admin_from_payload_or_query()
+    if error:
+        return error
+
     row = SharedFile.query.get_or_404(file_id)
     row.status = 'approved'
     row.review_reason = 'Approved by admin'
@@ -268,7 +293,11 @@ def admin_approve_file(file_id: int):
 
 @api.post('/admin/files/<int:file_id>/reject')
 def admin_reject_file(file_id: int):
-    # Reject a pending file manually.
+    # Admin rejects any file.
+    admin, error = require_admin_from_payload_or_query()
+    if error:
+        return error
+
     row = SharedFile.query.get_or_404(file_id)
     row.status = 'rejected'
     row.review_reason = 'Rejected by admin'
@@ -276,16 +305,45 @@ def admin_reject_file(file_id: int):
     return jsonify({'message': 'File rejected successfully', 'file': serialize_file(row)})
 
 
+@api.post('/admin/files/<int:file_id>/delete')
+def admin_delete_file(file_id: int):
+    # Admin permanently deletes any file without needing a report.
+    admin, error = require_admin_from_payload_or_query()
+    if error:
+        return error
+
+    row = SharedFile.query.get_or_404(file_id)
+    storage_path = os.path.join(current_app.config['UPLOAD_FOLDER'], row.storage_name)
+
+    try:
+        if os.path.exists(storage_path):
+            os.remove(storage_path)
+    except Exception as exc:
+        current_app.logger.warning('Could not delete physical file: %s', exc)
+
+    db.session.delete(row)
+    db.session.commit()
+    return jsonify({'message': 'File deleted successfully'})
+
+
 @api.get('/admin/reports')
 def admin_reports():
-    # Return reports that need admin decision.
+    # Admin can view open user reports.
+    admin, error = require_admin_from_payload_or_query()
+    if error:
+        return error
+
     rows = FileReport.query.filter_by(status='open').order_by(FileReport.created_at.desc()).all()
     return jsonify([serialize_report(row) for row in rows])
 
 
 @api.post('/admin/reports/<int:report_id>/accept')
 def admin_accept_report(report_id: int):
-    # Accept a report and reject the reported file.
+    # Accepting a report rejects the reported file.
+    admin, error = require_admin_from_payload_or_query()
+    if error:
+        return error
+
     report = FileReport.query.get_or_404(report_id)
     report.status = 'accepted'
     report.admin_note = 'Accepted by admin'
@@ -300,15 +358,13 @@ def admin_accept_report(report_id: int):
 
 @api.post('/admin/reports/<int:report_id>/reject')
 def admin_reject_report(report_id: int):
-    # Reject a report and keep the file visible.
+    # Rejecting a report keeps the reported file visible.
+    admin, error = require_admin_from_payload_or_query()
+    if error:
+        return error
+
     report = FileReport.query.get_or_404(report_id)
     report.status = 'rejected'
     report.admin_note = 'Rejected by admin'
     db.session.commit()
     return jsonify({'message': 'Report rejected successfully', 'report': serialize_report(report)})
-
-@api.get('/fix-db')
-def fix_db():
-    db.session.execute(db.text("ALTER TABLE shared_files DROP COLUMN IF EXISTS rating;"))
-    db.session.commit()
-    return jsonify({'message': 'Database fixed successfully'})

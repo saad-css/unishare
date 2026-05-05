@@ -24,11 +24,16 @@ def create_app() -> Flask:
         # Create missing tables if they do not exist.
         db.create_all()
 
-        # Add missing columns/tables for old databases.
+        # Fix old database schemas and add missing columns/tables.
         try:
             # Add admin flag to users table.
             db.session.execute(text(
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE NOT NULL"
+            ))
+
+            # Remove old rating column because the rating feature was deleted.
+            db.session.execute(text(
+                "ALTER TABLE shared_files DROP COLUMN IF EXISTS rating"
             ))
 
             # Add review status to shared files.
@@ -41,7 +46,20 @@ def create_app() -> Flask:
                 "ALTER TABLE shared_files ADD COLUMN IF NOT EXISTS review_reason VARCHAR(255)"
             ))
 
-            # Add admin note to reports table for old databases.
+            # Create reports table if missing.
+            db.session.execute(text(
+                "CREATE TABLE IF NOT EXISTS file_reports ("
+                "id SERIAL PRIMARY KEY, "
+                "file_id INTEGER NOT NULL REFERENCES shared_files(id) ON DELETE CASCADE, "
+                "user_id INTEGER NOT NULL REFERENCES users(id), "
+                "reason VARCHAR(255) DEFAULT 'Reported by user' NOT NULL, "
+                "status VARCHAR(30) DEFAULT 'open' NOT NULL, "
+                "admin_note VARCHAR(255), "
+                "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL"
+                ")"
+            ))
+
+            # Add admin note to older file_reports tables.
             db.session.execute(text(
                 "ALTER TABLE file_reports ADD COLUMN IF NOT EXISTS admin_note VARCHAR(255)"
             ))

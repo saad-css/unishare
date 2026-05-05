@@ -6,34 +6,32 @@ from ..widgets.file_card import FileCard
 
 class FilesScreen(MDScreen):
     def refresh_lang(self):
-        # English-only UI refresh for file cards.
+        # English-only version: keep file cards updated.
         for card in self.ids.full_file_grid.children:
-            if hasattr(card, 'refresh_lang'):
+            if hasattr(card, "refresh_lang"):
                 card.refresh_lang()
 
-    def load(self, course_id, course_name, user_id=None):
+    def load(self, course_id, course_name):
         # Load all files for one course into the dedicated files screen.
         self.ids.files_title_lbl.text = course_name
+
         grid = self.ids.full_file_grid
         grid.clear_widgets()
 
         try:
-            files = get_json(f'/files/{course_id}')
-        except Exception as e:
-            print('Files screen load error:', e)
+            files = get_json(f"/files/{course_id}")
+        except Exception:
             files = []
 
         for item in files:
             card = FileCard()
-            card.storage_name = item.get('storage_name', '')
-            card.file_id = item.get('id')
-            card.user_id = user_id
 
-            filename = item.get('filename', 'Unknown file')
-            uploader = item.get('uploader', 'Unknown')
+            card.storage_name = item.get("storage_name", "")
+            filename = item.get("filename", "Unknown file")
+            uploader = item.get("uploader", "Unknown")
 
             card.ids.title.text = filename
-            card.ids.uploader.text = f'By: {uploader}'
+            card.ids.uploader.text = f"By: {uploader}"
 
             icon, color = card.get_icon_and_color(filename)
             card.ids.file_icon.icon = icon

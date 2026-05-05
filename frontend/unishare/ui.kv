@@ -106,6 +106,15 @@ MDScreenManager:
                         root.manager.transition = SlideTransition(direction='left', duration=0.25)
                         root.manager.current = 'register'
 
+                Widget:
+
+                MDChip:
+                    id: lang_chip_login
+                    text: 'AR'
+                    md_bg_color: 0.255, 0.647, 0.961, 0.12
+                    text_color: 0.255, 0.647, 0.961, 1
+                    on_release: app.switch_lang()
+
         Widget:
 
 <RegisterScreen>:
@@ -133,6 +142,13 @@ MDScreenManager:
                 halign: 'center'
                 font_style: 'H6'
                 bold: True
+
+            MDChip:
+                id: lang_chip_register
+                text: 'AR'
+                md_bg_color: 0.255, 0.647, 0.961, 0.12
+                text_color: 0.255, 0.647, 0.961, 1
+                on_release: app.switch_lang()
 
         MDCard:
             orientation: 'vertical'
@@ -225,6 +241,13 @@ MDScreenManager:
                     bold: True
                     theme_text_color: 'Custom'
                     text_color: 0.1, 0.1, 0.1, 1
+
+                MDChip:
+                    id: lang_chip_home
+                    text: 'AR'
+                    md_bg_color: 0.255, 0.647, 0.961, 0.12
+                    text_color: 0.255, 0.647, 0.961, 1
+                    on_release: app.switch_lang()
 
             FloatLayout:
                 MDScrollView:
@@ -444,6 +467,13 @@ MDScreenManager:
                 theme_text_color: 'Custom'
                 text_color: 1, 1, 1, 1
 
+            MDChip:
+                id: lang_chip_files
+                text: 'AR'
+                md_bg_color: 1, 1, 1, 0.18
+                text_color: 1, 1, 1, 1
+                on_release: app.switch_lang()
+
         MDScrollView:
             MDGridLayout:
                 id: full_file_grid
@@ -512,52 +542,61 @@ MDScreenManager:
             theme_text_color: 'Custom'
             text_color: 1, 0.2, 0.2, 1
             on_release: root.report_file()
-            
+
+
 <AdminScreen>:
     name: 'admin'
     md_bg_color: 0.965, 0.973, 0.988, 1
 
     MDBoxLayout:
         orientation: 'vertical'
-        padding: '18dp'
-        spacing: '12dp'
+        padding: '16dp'
+        spacing: '10dp'
 
         MDLabel:
             text: 'Admin Panel'
             halign: 'center'
             font_style: 'H5'
             bold: True
-            adaptive_height: True
+            size_hint_y: None
+            height: '42dp'
 
         MDBoxLayout:
             size_hint_y: None
-            height: '46dp'
+            height: '48dp'
             spacing: '8dp'
+
+            MDFillRoundFlatButton:
+                text: 'All Files'
+                size_hint_x: 1
+                on_release: root.load_all_files()
+
+            MDFillRoundFlatButton:
+                text: 'Pending'
+                size_hint_x: 1
+                on_release: root.load_pending_files()
 
             MDFillRoundFlatButton:
                 text: 'Reports'
                 size_hint_x: 1
                 on_release: root.load_reports()
 
-            MDFillRoundFlatButton:
-                text: 'Pending Files'
-                size_hint_x: 1
-                on_release: root.load_pending_files()
-
         MDLabel:
             id: admin_status
-            text: 'Reports will appear here.'
+            text: 'Choose a section.'
             halign: 'center'
             theme_text_color: 'Custom'
-            text_color: 0.25, 0.25, 0.25, 1
-            adaptive_height: True
+            text_color: 0.3, 0.3, 0.3, 1
+            size_hint_y: None
+            height: '30dp'
 
         MDScrollView:
             MDBoxLayout:
                 id: admin_list
                 orientation: 'vertical'
-                spacing: '10dp'
                 adaptive_height: True
+                spacing: '10dp'
+                padding: '0dp', '6dp'
 
         MDFlatButton:
             text: 'Logout'

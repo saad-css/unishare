@@ -3,7 +3,6 @@ import urllib.request
 from kivymd.uix.card import MDCard
 
 from ..core.config import BASE_URL
-from ..core.i18n import t, font
 from ..core.api import post_json
 
 
@@ -11,22 +10,20 @@ class FileCard(MDCard):
     # Server-side unique file name used for downloading.
     storage_name = ''
 
-    # Database file ID used for report requests.
+    # Database file ID used for reporting.
     file_id = None
 
     # Logged-in user ID used when reporting a file.
     user_id = None
 
     def refresh_lang(self):
-        # English-only card labels.
-        self.ids.dl_btn.text = t('download_btn')
-        self.ids.dl_btn.font_name = font()
-        self.ids.title.font_name = font()
-        self.ids.uploader.font_name = font()
+        # English-only version: keep labels consistent.
+        self.ids.dl_btn.text = 'DOWNLOAD'
 
     def get_icon_and_color(self, filename):
         # Choose icon based on file extension.
         ext = os.path.splitext(filename)[-1].lower()
+
         icons = {
             '.pdf': ('file-pdf-box', (0.86, 0.21, 0.21, 1)),
             '.doc': ('file-word-box', (0.13, 0.47, 0.87, 1)),
@@ -40,6 +37,7 @@ class FileCard(MDCard):
             '.jpg': ('file-image-outline', (0.56, 0.27, 0.87, 1)),
             '.jpeg': ('file-image-outline', (0.56, 0.27, 0.87, 1)),
         }
+
         return icons.get(ext, ('file-document-outline', (0.255, 0.647, 0.961, 1)))
 
     def download_file(self):
@@ -47,6 +45,7 @@ class FileCard(MDCard):
         try:
             filename = self.ids.title.text
             downloads_dir = os.path.join(os.path.expanduser('~'), 'Downloads')
+            os.makedirs(downloads_dir, exist_ok=True)
             save_path = os.path.join(downloads_dir, filename)
 
             if not self.storage_name:
@@ -55,13 +54,13 @@ class FileCard(MDCard):
 
             url = f'{BASE_URL}/download/{self.storage_name}'
             urllib.request.urlretrieve(url, save_path)
-            print(t('dl_ok'))
+            print('Saved to Downloads')
+
         except Exception as e:
-            print('Download exception:', e)
-            print(t('dl_fail'))
+            print('Download failed:', e)
 
     def report_file(self):
-        # Send a file report to the backend so it appears immediately in Admin Panel.
+        # Send a file report to the backend for admin review.
         if not self.file_id or not self.user_id:
             print('Report failed: missing file_id or user_id')
             return
@@ -69,10 +68,8 @@ class FileCard(MDCard):
         try:
             response = post_json(f'/files/{self.file_id}/report', {
                 'user_id': self.user_id,
-                'reason': 'Reported by user',
+                'reason': 'Reported by user'
             })
-            print('Report status:', response.status_code)
-            print(response.json() if response.content else t('report_ok'))
+            print('Report response:', response.status_code, response.text)
         except Exception as e:
             print('Report error:', e)
-            print(t('report_fail'))

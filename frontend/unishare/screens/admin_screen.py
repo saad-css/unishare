@@ -1,7 +1,7 @@
-from kivymd.uix.screen import MDScreen
 from kivy.uix.screenmanager import FadeTransition
-from kivymd.uix.card import MDCard
+from kivymd.uix.screen import MDScreen
 from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.card import MDCard
 from kivymd.uix.label import MDLabel
 from kivymd.uix.button import MDFillRoundFlatButton, MDFlatButton
 
@@ -9,155 +9,183 @@ from ..core.api import get_json, post_json
 
 
 class AdminScreen(MDScreen):
-    user_id = None
-    user_name = ''
+    # Filled after admin login.
+    admin_user_id = None
 
     def on_enter(self):
-        # Load reports first because reported files are the main admin task.
-        self.load_reports()
+        # Load all files when the admin panel opens.
+        self.load_all_files()
 
-    def _clear_list(self, message=''):
-        # Clear the admin content list and optionally show a message.
+    def _clear(self, message=''):
         self.ids.admin_list.clear_widgets()
         self.ids.admin_status.text = message
 
-    def _add_item_card(self, title, subtitle, approve_text, reject_text, approve_callback, reject_callback):
-        # Build one admin review card with Accept/Reject buttons.
+    def _admin_query(self):
+        return f'?admin_user_id={self.admin_user_id}'
+
+    def _admin_payload(self):
+        return {'admin_user_id': self.admin_user_id}
+
+    def _add_card(self, title, details, actions):
+        # Build one admin card with action buttons.
         card = MDCard(
             orientation='vertical',
-            size_hint=(1, None),
-            height='178dp',
-            padding='14dp',
+            size_hint_y=None,
+            height='190dp',
+            padding='12dp',
             spacing='8dp',
-            radius=[18, 18, 18, 18],
-            elevation=2,
-            md_bg_color=(1, 1, 1, 1),
+            radius=[16, 16, 16, 16],
+            elevation=1,
         )
 
-        title_label = MDLabel(
+        card.add_widget(MDLabel(
             text=title,
             bold=True,
+            adaptive_height=True,
             theme_text_color='Custom',
             text_color=(0.1, 0.1, 0.1, 1),
+        ))
+
+        card.add_widget(MDLabel(
+            text=details,
             adaptive_height=True,
-        )
-        subtitle_label = MDLabel(
-            text=subtitle,
             theme_text_color='Custom',
             text_color=(0.35, 0.35, 0.35, 1),
-            adaptive_height=True,
-        )
+        ))
 
-        actions = MDBoxLayout(size_hint_y=None, height='46dp', spacing='8dp')
-        approve_btn = MDFillRoundFlatButton(text=approve_text, size_hint_x=1)
-        reject_btn = MDFlatButton(text=reject_text, size_hint_x=1)
+        row = MDBoxLayout(size_hint_y=None, height='42dp', spacing='8dp')
+        for label, callback, danger in actions:
+            btn_cls = MDFlatButton if danger else MDFillRoundFlatButton
+            btn = btn_cls(text=label, size_hint_x=1)
+            btn.bind(on_release=lambda _btn, cb=callback: cb())
+            row.add_widget(btn)
 
-        approve_btn.bind(on_release=lambda *_args: approve_callback())
-        reject_btn.bind(on_release=lambda *_args: reject_callback())
-
-        actions.add_widget(approve_btn)
-        actions.add_widget(reject_btn)
-
-        card.add_widget(title_label)
-        card.add_widget(subtitle_label)
-        card.add_widget(actions)
+        card.add_widget(row)
         self.ids.admin_list.add_widget(card)
 
-    def load_pending_files(self):
-        # Fetch files that need manual admin review and render action cards.
-        self._clear_list('Loading pending files...')
+    def load_all_files(self):
+        # Show all files regardless of status.
+        if not self.admin_user_id:
+            self._clear('Admin user is missing. Login again with admin email.')
+            return
+
         try:
-            files = get_json('/admin/pending-files')
+            files = get_json(f'/admin/files{self._admin_query()}')
+            self._clear(f'All files: {len(files)}')
+
+            if not files:
+                self.ids.admin_status.text = 'No files found.'
+                return
+
+            for item in files:
+                title = f"#{item['id']} - {item['filename']}"
+                details = (
+                    f"Course: {item.get('course', '')}\n"
+                    f"Uploader: {item.get('uploader', '')}\n"
+                    f"Status: {item.get('status', '')}\n"
+                    f"Reason: {item.get('review_reason') or ''}"
+                )
+                file_id = item['id']
+                self._add_card(title, details, [
+                    ('Approve', lambda fid=file_id: self.approve_file(fid), False),
+                    ('Reject', lambda fid=file_id: self.reject_file(fid), False),
+                    ('Delete', lambda fid=file_id: self.delete_file(fid), True),
+                ])
         except Exception as e:
-            self._clear_list(f'Could not load pending files: {e}')
+            self._clear(f'Load all files error: {e}')
+
+    def load_pending_files(self):
+        # Show files that the algorithm could not decide.
+        if not self.admin_user_id:
+            self._clear('Admin user is missing. Login again with admin email.')
             return
 
-        self._clear_list('Pending files')
-        if not files:
-            self.ids.admin_status.text = 'No pending files.'
-            return
+        try:
+            files = get_json(f'/admin/pending-files{self._admin_query()}')
+            self._clear(f'Pending files: {len(files)}')
 
-        for item in files:
-            file_id = item['id']
-            title = f"File: {item.get('filename', 'Unknown')}"
-            subtitle = (
-                f"Course: {item.get('course', '-') }\n"
-                f"Uploader: {item.get('uploader', '-') }\n"
-                f"Reason: {item.get('review_reason') or '-'}"
-            )
-            self._add_item_card(
-                title,
-                subtitle,
-                'Approve File',
-                'Reject File',
-                lambda fid=file_id: self.approve_file(fid),
-                lambda fid=file_id: self.reject_file(fid),
-            )
+            if not files:
+                self.ids.admin_status.text = 'No pending files.'
+                return
+
+            for item in files:
+                title = f"#{item['id']} - {item['filename']}"
+                details = (
+                    f"Course: {item.get('course', '')}\n"
+                    f"Uploader: {item.get('uploader', '')}\n"
+                    f"Reason: {item.get('review_reason') or ''}"
+                )
+                file_id = item['id']
+                self._add_card(title, details, [
+                    ('Approve', lambda fid=file_id: self.approve_file(fid), False),
+                    ('Reject', lambda fid=file_id: self.reject_file(fid), False),
+                    ('Delete', lambda fid=file_id: self.delete_file(fid), True),
+                ])
+        except Exception as e:
+            self._clear(f'Pending files error: {e}')
 
     def load_reports(self):
-        # Fetch user reports and render action cards.
-        self._clear_list('Loading reports...')
+        # Show open reports for admin decision.
+        if not self.admin_user_id:
+            self._clear('Admin user is missing. Login again with admin email.')
+            return
+
         try:
-            reports = get_json('/admin/reports')
+            reports = get_json(f'/admin/reports{self._admin_query()}')
+            self._clear(f'Open reports: {len(reports)}')
+
+            if not reports:
+                self.ids.admin_status.text = 'No open reports.'
+                return
+
+            for item in reports:
+                title = f"Report #{item['id']} - {item.get('filename', '')}"
+                details = (
+                    f"Course: {item.get('course', '')}\n"
+                    f"Uploader: {item.get('uploader', '')}\n"
+                    f"Reported by: {item.get('reported_by', '')}\n"
+                    f"Reason: {item.get('reason', '')}"
+                )
+                report_id = item['id']
+                self._add_card(title, details, [
+                    ('Accept Report', lambda rid=report_id: self.accept_report(rid), False),
+                    ('Reject Report', lambda rid=report_id: self.reject_report(rid), False),
+                ])
         except Exception as e:
-            self._clear_list(f'Could not load reports: {e}')
-            return
-
-        self._clear_list('Open reports')
-        if not reports:
-            self.ids.admin_status.text = 'No open reports.'
-            return
-
-        for item in reports:
-            report_id = item['id']
-            title = f"Reported File: {item.get('filename', 'Unknown')}"
-            subtitle = (
-                f"Course: {item.get('course', '-') }\n"
-                f"Reported by: {item.get('reported_by', '-') }\n"
-                f"Reason: {item.get('reason') or '-'}"
-            )
-            self._add_item_card(
-                title,
-                subtitle,
-                'Accept Report',
-                'Reject Report',
-                lambda rid=report_id: self.accept_report(rid),
-                lambda rid=report_id: self.reject_report(rid),
-            )
+            self._clear(f'Reports error: {e}')
 
     def approve_file(self, file_id):
-        # Approve a file that is waiting for review.
-        try:
-            post_json(f'/admin/files/{file_id}/approve', {})
-            self.load_pending_files()
-        except Exception as e:
-            self.ids.admin_status.text = f'Approve failed: {e}'
+        # Admin approves a file.
+        response = post_json(f'/admin/files/{file_id}/approve', self._admin_payload())
+        print('Approve response:', response.status_code, response.text)
+        self.load_all_files()
 
     def reject_file(self, file_id):
-        # Reject a file that is waiting for review.
-        try:
-            post_json(f'/admin/files/{file_id}/reject', {})
-            self.load_pending_files()
-        except Exception as e:
-            self.ids.admin_status.text = f'Reject failed: {e}'
+        # Admin rejects a file.
+        response = post_json(f'/admin/files/{file_id}/reject', self._admin_payload())
+        print('Reject response:', response.status_code, response.text)
+        self.load_all_files()
+
+    def delete_file(self, file_id):
+        # Admin deletes a file permanently without needing a report.
+        response = post_json(f'/admin/files/{file_id}/delete', self._admin_payload())
+        print('Delete response:', response.status_code, response.text)
+        self.load_all_files()
 
     def accept_report(self, report_id):
-        # Accept a report and remove/reject the reported file.
-        try:
-            post_json(f'/admin/reports/{report_id}/accept', {})
-            self.load_reports()
-        except Exception as e:
-            self.ids.admin_status.text = f'Accept report failed: {e}'
+        # Accept report and reject the reported file.
+        response = post_json(f'/admin/reports/{report_id}/accept', self._admin_payload())
+        print('Accept report response:', response.status_code, response.text)
+        self.load_reports()
 
     def reject_report(self, report_id):
-        # Reject a report and keep the file available.
-        try:
-            post_json(f'/admin/reports/{report_id}/reject', {})
-            self.load_reports()
-        except Exception as e:
-            self.ids.admin_status.text = f'Reject report failed: {e}'
+        # Reject report and keep the file available.
+        response = post_json(f'/admin/reports/{report_id}/reject', self._admin_payload())
+        print('Reject report response:', response.status_code, response.text)
+        self.load_reports()
 
     def logout(self):
         # Return admin to login screen.
+        self.admin_user_id = None
         self.manager.transition = FadeTransition(duration=0.22)
         self.manager.current = 'login'

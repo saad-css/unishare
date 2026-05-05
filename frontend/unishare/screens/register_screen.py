@@ -1,3 +1,4 @@
+from kivymd.app import MDApp
 from kivymd.uix.screen import MDScreen
 from kivy.uix.screenmanager import SlideTransition
 import requests
@@ -7,14 +8,6 @@ from ..core.i18n import t, font
 
 
 class RegisterScreen(MDScreen):
-    def refresh_lang(self):
-        # English-only UI refresh.
-        self.ids.register_title_lbl.text = t('register_title')
-        self.ids.name_input.hint_text = t('fullname_hint')
-        self.ids.email_input.hint_text = t('email_hint')
-        self.ids.pass_input.hint_text = t('pass_hint')
-        self.ids.create_btn.text = t('create_btn')
-        self.ids.have_acc_btn.text = t('have_acc')
 
     def do_register(self):
         # Read and clean user input.
@@ -33,20 +26,22 @@ class RegisterScreen(MDScreen):
             response = post_json('/signup', {
                 'full_name': name,
                 'email': email,
-                'password': password,
+                'password': password
             })
 
             # Handle successful registration and return to login screen.
             if response.status_code == 201:
+                print(t('reg_ok'))  # Debug success message
                 self.ids.error_label.text = ''
                 self.manager.transition = SlideTransition(direction='right', duration=0.25)
                 self.manager.current = 'login'
                 return
 
-            # Handle duplicate email or any backend validation error.
+            # Handle duplicate email error.
             if response.status_code == 409:
                 self.ids.error_label.text = t('err_dup')
             else:
+                # Show backend error message if available.
                 self.ids.error_label.text = response.json().get('error', t('err_reg_fail'))
 
         except requests.exceptions.ConnectionError:
@@ -54,7 +49,8 @@ class RegisterScreen(MDScreen):
             self.ids.error_label.text = t('err_offline')
         except Exception as e:
             # Print unexpected errors for debugging.
-            print('Register error:', e)
+            print("Register error:", e)
             self.ids.error_label.text = t('err_unexpected')
 
+        # Apply the correct font to the message label.
         self.ids.error_label.font_name = font()
