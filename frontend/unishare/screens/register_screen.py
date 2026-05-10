@@ -1,10 +1,8 @@
-from kivymd.app import MDApp
 from kivymd.uix.screen import MDScreen
 from kivy.uix.screenmanager import SlideTransition
 import requests
 
 from ..core.api import post_json
-from ..core.i18n import t, font
 
 
 class RegisterScreen(MDScreen):
@@ -17,8 +15,7 @@ class RegisterScreen(MDScreen):
 
         # Validate required fields before sending the request.
         if not name or not email or not password:
-            self.ids.error_label.text = t('err_fields')
-            self.ids.error_label.font_name = font()
+            self.ids.error_label.text = "Please fill in all fields"
             return
 
         try:
@@ -31,26 +28,29 @@ class RegisterScreen(MDScreen):
 
             # Handle successful registration and return to login screen.
             if response.status_code == 201:
-                print(t('reg_ok'))  # Debug success message
-                self.ids.error_label.text = ''
+                print("Account created successfully")
+                self.ids.error_label.text = ""
                 self.manager.transition = SlideTransition(direction='right', duration=0.25)
                 self.manager.current = 'login'
                 return
 
             # Handle duplicate email error.
             if response.status_code == 409:
-                self.ids.error_label.text = t('err_dup')
+                self.ids.error_label.text = "Email already registered"
             else:
                 # Show backend error message if available.
-                self.ids.error_label.text = response.json().get('error', t('err_reg_fail'))
+                try:
+                    self.ids.error_label.text = response.json().get(
+                        'error',
+                        "Registration failed"
+                    )
+                except Exception:
+                    self.ids.error_label.text = "Registration failed"
 
         except requests.exceptions.ConnectionError:
             # Backend server is unreachable.
-            self.ids.error_label.text = t('err_offline')
+            self.ids.error_label.text = "Server is offline"
         except Exception as e:
             # Print unexpected errors for debugging.
             print("Register error:", e)
-            self.ids.error_label.text = t('err_unexpected')
-
-        # Apply the correct font to the message label.
-        self.ids.error_label.font_name = font()
+            self.ids.error_label.text = "Unexpected error"

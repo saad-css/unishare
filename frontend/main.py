@@ -3,7 +3,6 @@ from kivy.factory import Factory
 from kivymd.app import MDApp
 from kivy.properties import OptionProperty
 
-from unishare.core.i18n import t
 from unishare.widgets.file_card import FileCard
 from unishare.screens.login_screen import LoginScreen
 from unishare.screens.register_screen import RegisterScreen

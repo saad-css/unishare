@@ -106,15 +106,6 @@ MDScreenManager:
                         root.manager.transition = SlideTransition(direction='left', duration=0.25)
                         root.manager.current = 'register'
 
-                Widget:
-
-                MDChip:
-                    id: lang_chip_login
-                    text: 'AR'
-                    md_bg_color: 0.255, 0.647, 0.961, 0.12
-                    text_color: 0.255, 0.647, 0.961, 1
-                    on_release: app.switch_lang()
-
         Widget:
 
 <RegisterScreen>:
@@ -142,13 +133,6 @@ MDScreenManager:
                 halign: 'center'
                 font_style: 'H6'
                 bold: True
-
-            MDChip:
-                id: lang_chip_register
-                text: 'AR'
-                md_bg_color: 0.255, 0.647, 0.961, 0.12
-                text_color: 0.255, 0.647, 0.961, 1
-                on_release: app.switch_lang()
 
         MDCard:
             orientation: 'vertical'
@@ -242,12 +226,6 @@ MDScreenManager:
                     theme_text_color: 'Custom'
                     text_color: 0.1, 0.1, 0.1, 1
 
-                MDChip:
-                    id: lang_chip_home
-                    text: 'AR'
-                    md_bg_color: 0.255, 0.647, 0.961, 0.12
-                    text_color: 0.255, 0.647, 0.961, 1
-                    on_release: app.switch_lang()
 
             FloatLayout:
                 MDScrollView:
@@ -466,13 +444,6 @@ MDScreenManager:
                 bold: True
                 theme_text_color: 'Custom'
                 text_color: 1, 1, 1, 1
-
-            MDChip:
-                id: lang_chip_files
-                text: 'AR'
-                md_bg_color: 1, 1, 1, 0.18
-                text_color: 1, 1, 1, 1
-                on_release: app.switch_lang()
 
         MDScrollView:
             MDGridLayout:

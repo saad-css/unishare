@@ -9,9 +9,10 @@ def seed_data():
     # Create sample majors
     cs = Major(name="Computer Science")
     it = Major(name="Information Technology")
-
+    
     db.session.add_all([cs, it])
     db.session.commit()
+
 
     # Create sample courses
     db.session.add_all([
