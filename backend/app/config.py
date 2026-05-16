@@ -19,7 +19,7 @@ class Config:
         'sqlite:///' + str(BASE_DIR / 'unishare.db')  # fallback for local use
     )
 
-    # Fix PostgreSQL URL format (Render may use "postgres://")
+    # Fix PostgreSQL URL format (Render use "postgres://")
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
 

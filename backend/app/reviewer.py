@@ -89,16 +89,16 @@ def cosine_similarity(counter_a: Counter, counter_b: Counter) -> float:
 
 
 def build_course_profile(course_name: str) -> Counter:
-    # Build a small dynamic profile from the course name only.
+    # Build a small dynamic profile from the course name only
     course_words = tokenize(course_name)
 
     profile = Counter()
 
     for word in course_words:
-        # Give course title words a strong weight.
+        # Give course title words a strong weight
         profile[word] += 5
 
-        # Add simple singular/plural support.
+        # Add simple singular/plural support
         if word.endswith("s") and len(word) > 4:
             profile[word[:-1]] += 3
         else:
@@ -108,10 +108,10 @@ def build_course_profile(course_name: str) -> Counter:
 
 
 def build_file_profile(file_text: str, file_path: str) -> Counter:
-    # Build profile from file content first, then filename as small support.
+    # Build profile from file content first, then filename as small support
     content_words = tokenize(file_text)
 
-    # Limit repeated words so one repeated word does not dominate the decision.
+    # Limit repeated words so one repeated word does not dominate the decision
     content_counter = Counter(content_words)
     profile = Counter()
 
